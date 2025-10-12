@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/simonostendorf/qr-code-generator/internal/helpers"
+	"github.com/simonostendorf/qr-code-generator/internal/cli"
 	"github.com/simonostendorf/qr-code-generator/pkg/qrcodegenerator"
 	"github.com/spf13/cobra"
 )
@@ -20,10 +20,12 @@ var generateCmd = &cobra.Command{
 }
 
 func executeGenerate(cmd *cobra.Command, args []string) error {
+	// validate arguments
 	if len(args) != 1 {
 		return cmd.Help()
 	}
 
+	// parse flags and arguments
 	url := args[0]
 	color, _ := cmd.Flags().GetString("color")
 	logoPath, _ := cmd.Flags().GetString("logo")
@@ -32,6 +34,7 @@ func executeGenerate(cmd *cobra.Command, args []string) error {
 	transparentBackground, _ := cmd.Flags().GetBool("transparent-background")
 	outFile, _ := cmd.Flags().GetString("out")
 
+	// generate qr code params from flags and arguments
 	params := qrcodegenerator.QRCodeParams{
 		URL:                   url,
 		Color:                 color,
@@ -39,8 +42,9 @@ func executeGenerate(cmd *cobra.Command, args []string) error {
 		ErrorCorrectionLevel:  qrcodegenerator.ErrorCorrectionLevel(errorCorrection),
 	}
 
+	// load logo image if specified
 	if logoPath != "" {
-		logo, err := helpers.ImageFromFile(logoPath)
+		logo, err := cli.ImageFromFile(logoPath)
 		if err != nil {
 			return fmt.Errorf("❌ failed to load logo image: %w", err)
 		}
@@ -48,13 +52,14 @@ func executeGenerate(cmd *cobra.Command, args []string) error {
 		params.Logo.SizeMultiplier = logoSizeMultiplier
 	}
 
+	// generate the qr code
 	qrcode, err := qrcodegenerator.GenerateQRCode(&params)
 	if err != nil {
 		return fmt.Errorf("❌ failed to generate QR code: %w", err)
 	}
 
 	// save the QR code to file
-	err = helpers.WriteToFile(outFile, qrcode)
+	err = cli.WriteToFile(outFile, qrcode)
 	if err != nil {
 		return fmt.Errorf("❌ failed to save QR code to file: %w", err)
 	}

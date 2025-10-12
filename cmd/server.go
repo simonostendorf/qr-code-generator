@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/simonostendorf/qr-code-generator/internal/server"
 	"github.com/spf13/cobra"
 )
 
@@ -16,15 +19,23 @@ var serverCmd = &cobra.Command{
 }
 
 func executeServer(cmd *cobra.Command, args []string) error {
+	// validate arguments
 	if len(args) != 0 {
 		return cmd.Help()
 	}
 
-	// TODO
+	// parse flags and arguments
+	port, _ := cmd.Flags().GetUint("port")
 
-	return nil
+	// create and start the server
+	srv := server.NewServer(port)
+
+	fmt.Printf("Starting server on port %d...\n", srv.Port)
+
+	return srv.Start()
 }
 
 // setup specific flags
 func init() {
+	serverCmd.Flags().Uint("port", 8000, "Port to run the server on")
 }
