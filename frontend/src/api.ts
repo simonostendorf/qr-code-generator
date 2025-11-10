@@ -1,4 +1,4 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+export const apiBase = import.meta.env.VITE_API_BASE || 'https://qr.ostendorf.cloud'
 
 export interface GenerateBodyLogo {
   imageBase64?: string
@@ -14,7 +14,7 @@ export interface GenerateBody {
 }
 
 export async function generateQRCode(params: GenerateBody): Promise<string> {
-  const response = await fetch(`${API_BASE}/api/generate`, {
+  const response = await fetch(`${apiBase}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
