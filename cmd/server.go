@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/simonostendorf/qr-code-generator/internal/server"
 	"github.com/spf13/cobra"
@@ -27,12 +30,22 @@ func executeServer(cmd *cobra.Command, args []string) error {
 	// parse flags and arguments
 	port, _ := cmd.Flags().GetUint("port")
 
+	// stop gracefully on SIGTERM (Kubernetes) and SIGINT (Ctrl+C)
+	ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+
 	// create and start the server
 	srv := server.NewServer(port)
 
 	fmt.Printf("Starting server on port %d...\n", srv.Port)
 
-	return srv.Start()
+	if err := srv.Start(ctx); err != nil {
+		return err
+	}
+
+	fmt.Println("Server stopped")
+
+	return nil
 }
 
 // setup specific flags

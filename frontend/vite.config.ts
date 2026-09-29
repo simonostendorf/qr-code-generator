@@ -7,14 +7,16 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-    tailwindcss(),
-  ],
+  plugins: [vue(), vueDevTools(), tailwindcss()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  server: {
+    proxy: {
+      // same origin API as in the image, where nginx proxies /api/ to the backend
+      '/api': process.env.BACKEND_URL ?? 'http://localhost:8000',
     },
   },
 })

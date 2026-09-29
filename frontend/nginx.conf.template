@@ -1,0 +1,72 @@
+# Rendered by the nginx image at start into /etc/nginx/conf.d/default.conf.
+# envsubst replaces only the BACKEND_URL variable (NGINX_ENVSUBST_FILTER);
+# nginx variables are still written as $name, never with braces. BACKEND_URL
+# has no trailing slash, so the full /api/... path is passed on.
+
+# Hashed build output is immutable, everything else revalidates. Proxied API
+# responses get no Cache-Control from here.
+map $uri $qr_cache_control {
+    ~^/assets/  "public, max-age=31536000, immutable";
+    ~^/api/     "";
+    default     "no-cache";
+}
+
+# TLS ends at the Gateway: pass on its scheme instead of our plain http.
+map $http_x_forwarded_proto $qr_forwarded_proto {
+    ""      $scheme;
+    default $http_x_forwarded_proto;
+}
+
+server {
+    listen 8080;
+    listen [::]:8080;
+    server_name _;
+
+    server_tokens off;
+    absolute_redirect off;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    # Set only here: an add_header inside a location would drop all of these.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header Cache-Control $qr_cache_control;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location /api/ {
+        # The logo travels base64 encoded in the JSON body.
+        client_max_body_size 10m;
+
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $qr_forwarded_proto;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    # A missing asset is a 404, not the SPA page with a year of cache.
+    location /assets/ {
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

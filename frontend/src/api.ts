@@ -1,4 +1,6 @@
-export const apiBase = import.meta.env.VITE_API_BASE || 'https://qr.ostendorf.cloud'
+// The API is served on the same origin: nginx proxies /api/ to the backend in
+// the image, the vite dev server does the same in development.
+export const apiBase = import.meta.env.VITE_API_BASE ?? ''
 
 export interface GenerateBodyLogo {
   imageBase64?: string
